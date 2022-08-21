@@ -23,10 +23,10 @@ while(<FILEIN>) {
   my $flag          = $cur_str[3];
 
   if ($flag eq '<=') {
-    # Входящее сообщение
-    my ($s3,$id) = split('id=',$str,2);                # Находим id
+    # п▓я┘п╬п╢я▐я┴п╣п╣ я│п╬п╬п╠я┴п╣п╫п╦п╣
+    my ($s3,$id) = split('id=',$str,2);                # п²п╟я┘п╬п╢п╦п╪ id
     $id = '' if not defined $id;
-    ($id,$s3) = $id ne '' ? split(' ',$id,2):('','');  # Если есть адрес, отрезаем его
+    ($id,$s3) = $id ne '' ? split(' ',$id,2):('','');  # п∙я│п╩п╦ п╣я│я┌я▄ п╟п╢я─п╣я│, п╬я┌я─п╣п╥п╟п╣п╪ п╣пЁп╬
     $sth_mes->execute($created,$int_id,$str,$id);
     $count_mes++;
   } else {
@@ -38,5 +38,4 @@ while(<FILEIN>) {
   }
 }
 
-print "Загружено\n message: $count_mes\n     log: $count_log\n\n";
- 
+print "п≈п╟пЁя─я┐п╤п╣п╫п╬\n message: $count_mes\n     log: $count_log\n\n";
