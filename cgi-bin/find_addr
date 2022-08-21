@@ -1,0 +1,68 @@
+#!/usr/bin/perl -w
+
+use DBI;
+
+# ------------ Получаем входной параметр -----------------
+if ($ENV{'REQUEST_METHOD'} eq "POST") {$mode = 0}
+if ($ENV{'REQUEST_METHOD'} eq "GET")  {$mode = 1}
+if ($mode == 0) {read(STDIN, $buffer, $ENV{'CONTENT_LENGTH'})}
+if ($mode == 1) { $buffer=$ENV{'QUERY_STRING'}; }
+@pairs = split(/&/, $buffer);
+foreach $pair (@pairs) {
+  ($name, $value) = split(/=/, $pair);
+  $value =~ tr/+/ /;
+  $value =~ s/%(..)/pack("C", hex($1))/eg;
+  $FORM{$name} = $value;
+}
+$addr=$FORM{'addr'};
+# --------------------------------------------------------
+# ------------------ Проверяем Email ---------------------
+if ($addr) {
+  $addr=~ s/^\s+//;  # Удаляем пробелы в начале строки
+  $addr=~ s/\s+$//;  # Удаляем пробелы в конце строки
+  unless ($addr =~ /^[a-z0-9A-Z][A-Za-z0-9.]+[A-Za-z0-9]\@[A-Za-z0-9.-]+$/) {
+    print_head("Ошибка ввода");
+    print "<EM><U><H2>Ошибка. Email указан неверно</EM></U></H2>\n";
+    print "<H4>Нажмите кнопку назад и повторите ввод</H4>\n";
+    print_end();
+    exit;
+  }
+}
+# --------------------------------------------------------
+$dbh = DBI->connect('DBI:mysql:mybase','root','1') or die "\n$DBI::errstr\n";
+$dbh->do("create temporary table tmp_log select created,int_id,str from log where address='$addr'");
+$dbh->do("insert into tmp_log select created,int_id,str from message where str like '%$addr%'");
+$count = $dbh->selectrow_array('select count(*) from tmp_log');
+$mas_log = $dbh->selectall_arrayref('select * from tmp_log order by int_id,created limit 100');
+
+
+$print_addr = $addr ? $addr:'Лог по общим сообщениям';
+print_head("$print_addr");
+print "<br><font size=+2>$print_addr</font>\n";
+print "<br><font size=-1 color=red>Внимание! Количество найденых строк превышает лимит в 100 записей</font>\n" if $count > 100;
+print "<br><hr><br>\n";
+print "<table width=\"80%\" border=1 align=center>\n";
+print "<tr> <th>Время</th> <th>Лог</th> </tr>\n";
+for (@$mas_log) {
+  ($created,$int_id,$str) = @$_;
+  $str =~ s/</&lt/g; # Заменяем вимволы < >
+  $str =~ s/>/&gt/g;
+  print "<tr> <td align=center><font color=blue>$created</font></td> <td align=left><font color=blue>$str</font></td> </tr>\n";
+}
+print "</table>\n";
+print "<br><hr><br>\n";
+
+$dbh->disconnect;
+print_end();
+
+sub print_head {
+  print "Content-type: text/html\n\n";
+  print "<html><head>";
+  print "<META CONTENT=\"text/html; charset=koi8-r\">";
+  print "<title>$_[0]</title></head>\n";
+  print "<center>\n";
+}
+
+sub print_end {
+  print "</center></body></html>\n";
+}
